@@ -2,8 +2,9 @@ services:
   - type: web
     name: node-carbon-dashboard
     env: node
+    branch: master
     rootDir: .
-    buildCommand: npm install
+    buildCommand: cd /opt/render/project/src || cd /opt/render/project && npm install
     startCommand: npm run dashboard
     envVars:
       - key: NODE_ENV
