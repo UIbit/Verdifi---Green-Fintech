@@ -2,6 +2,7 @@ services:
   - type: web
     name: node-carbon-dashboard
     env: node
+    rootDir: .
     buildCommand: npm install
     startCommand: npm run dashboard
     envVars:
