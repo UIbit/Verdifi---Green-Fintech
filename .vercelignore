@@ -1,0 +1,17 @@
+node_modules
+.git
+.gitignore
+*.md
+paper/
+examples/
+test/
+scripts/
+SECURITY_*.md
+QUICK_START_SECURITY.md
+.vscode/
+.idea/
+*.log
+.env
+.env.local
+
+

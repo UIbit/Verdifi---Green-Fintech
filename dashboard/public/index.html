@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Node Carbon Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root { --bg:#0b1020; --card:#111833; --text:#e7ecf6; --muted:#94a3b8; --accent:#22d3ee; --accent2:#a78bfa; }
+      *{ box-sizing:border-box; }
+      body{ margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto; background:linear-gradient(180deg,#0b1020,#0a1126); color:var(--text); }
+      header{ padding:20px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #1b2448; position:sticky; top:0; background:#0b1020cc; backdrop-filter:blur(8px); }
+      h1{ margin:0; font-size:20px; letter-spacing:0.3px; }
+      .container{ max-width:1100px; margin:24px auto; padding:0 16px; }
+      .grid{ display:grid; grid-template-columns:1fr; gap:16px; }
+      @media(min-width:900px){ .grid{ grid-template-columns: 2fr 1fr; } }
+      .card{ background:var(--card); border:1px solid #1b2448; border-radius:12px; padding:16px; }
+      .card h2{ margin:0 0 12px; font-size:16px; color:#cbd5e1; }
+      .metrics{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
+      .metric{ background:#0e1530; border:1px solid #1b2448; border-radius:10px; padding:12px; }
+      .metric .label{ color:var(--muted); font-size:12px; }
+      .metric .value{ font-size:18px; margin-top:6px; font-weight:700; }
+      .controls{ display:flex; gap:10px; align-items:center; }
+      .toggle{ display:inline-flex; gap:8px; align-items:center; color:#cbd5e1; font-size:12px; }
+      .toggle input{ accent-color:#22d3ee; }
+      button{ background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#05122b; font-weight:700; padding:10px 14px; border-radius:10px; cursor:pointer; }
+      button.secondary{ background:#0e1530; color:#dbe7ff; border:1px solid #1b2448; }
+      .energy{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
+      .muted{ color:var(--muted); font-size:12px; }
+      canvas{ width:100% !important; height:320px !important; }
+      footer{ text-align:center; padding:16px; color:#7f8ca8; font-size:12px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🌱 Node Carbon Live Dashboard</h1>
+      <div class="controls">
+        <div class="toggle">
+          <label for="themeToggle">Light</label>
+          <input type="checkbox" id="themeToggle" />
+          <label for="themeToggle">Dark</label>
+        </div>
+        <button id="startBtn">Start</button>
+        <button id="stopBtn" class="secondary">Stop</button>
+        <button id="exportBtn" class="secondary">Export CSV</button>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="grid" id="chartsGrid">
+        <div class="card">
+          <h2>CPU & Memory</h2>
+          <canvas id="cpuMemChart"></canvas>
+        </div>
+        <div class="card">
+          <h2>Carbon Emission</h2>
+          <canvas id="carbonChart"></canvas>
+        </div>
+        <div class="card">
+          <h2>Current Snapshot</h2>
+          <div class="metrics" id="metrics">
+            <div class="metric"><div class="label">CPU Usage (W)</div><div class="value" id="cpuW">-</div></div>
+            <div class="metric"><div class="label">RSS Δ (MB)</div><div class="value" id="rssMB">-</div></div>
+            <div class="metric"><div class="label">Heap Used Δ (MB)</div><div class="value" id="heapUsedMB">-</div></div>
+            <div class="metric"><div class="label">Carbon (gCO2e)</div><div class="value" id="co2">-</div></div>
+            <div class="metric"><div class="label">Elapsed (ms)</div><div class="value" id="elapsed">-</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h2>Regional Energy Mix</h2>
+        <div class="energy" id="energy"></div>
+        <div class="muted" id="energyMeta"></div>
+      </div>
+    </div>
+
+    <footer>
+      Built with Socket.IO + Chart.js · Real-time Node process carbon metrics
+    </footer>
+
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script>
+      const socket = io();
+      const startBtn = document.getElementById('startBtn');
+      const stopBtn = document.getElementById('stopBtn');
+      const exportBtn = document.getElementById('exportBtn');
+      const themeToggle = document.getElementById('themeToggle');
+
+      const cpuWEl = document.getElementById('cpuW');
+      const rssMBEl = document.getElementById('rssMB');
+      const heapUsedMBEl = document.getElementById('heapUsedMB');
+      const co2El = document.getElementById('co2');
+      const elapsedEl = document.getElementById('elapsed');
+      const energyEl = document.getElementById('energy');
+      const energyMetaEl = document.getElementById('energyMeta');
+
+      // Data buffers for export
+      const samples = []; // {ts,cpu,rss,heap,co2,elapsed}
+
+      // Charts
+      const carbonCtx = document.getElementById('carbonChart').getContext('2d');
+      const cpuMemCtx = document.getElementById('cpuMemChart').getContext('2d');
+
+      const baseOptions = {
+        responsive: true,
+        plugins: { legend: { labels: { color: '#cbd5e1' } } },
+        scales: {
+          x: { ticks: { color: '#9aa8c7' }, grid: { color: '#1b2448' } },
+          y: { ticks: { color: '#9aa8c7' }, grid: { color: '#1b2448' } }
+        }
+      };
+
+      const carbonChart = new Chart(carbonCtx, {
+        type: 'line',
+        data: { labels: [], datasets: [
+          { label: 'Carbon (gCO2e)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', fill:true, tension:0.35 }
+        ]},
+        options: baseOptions
+      });
+
+      const cpuMemChart = new Chart(cpuMemCtx, {
+        type: 'line',
+        data: { labels: [], datasets: [
+          { label: 'CPU (W)', data: [], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.15)', fill:true, tension:0.35 },
+          { label: 'RSS Δ (MB)', data: [], borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.15)', fill:true, tension:0.35 },
+          { label: 'Heap Δ (MB)', data: [], borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.15)', fill:true, tension:0.35 }
+        ]},
+        options: baseOptions
+      });
+
+      function addPoint(ts, values){
+        const maxPoints = 120; // ~4 minutes at 2s cadence
+        const label = new Date(ts).toLocaleTimeString();
+
+        // CPU/Mem chart
+        cpuMemChart.data.labels.push(label);
+        cpuMemChart.data.datasets[0].data.push(values.cpu);
+        cpuMemChart.data.datasets[1].data.push(values.rss);
+        cpuMemChart.data.datasets[2].data.push(values.heap);
+        if(cpuMemChart.data.labels.length > maxPoints){
+          cpuMemChart.data.labels.shift();
+          cpuMemChart.data.datasets.forEach(ds => ds.data.shift());
+        }
+        cpuMemChart.update('none');
+
+        // Carbon chart
+        carbonChart.data.labels.push(label);
+        carbonChart.data.datasets[0].data.push(values.co2);
+        if(carbonChart.data.labels.length > maxPoints){
+          carbonChart.data.labels.shift();
+          carbonChart.data.datasets.forEach(ds => ds.data.shift());
+        }
+        carbonChart.update('none');
+      }
+
+      socket.on('energyInfo', (info) => {
+        energyEl.innerHTML = '';
+        const fields = [
+          ['Country', info.country],
+          ['Carbon Intensity (gCO2e/kWh)', info.carbon_intensity_electricity],
+          ['Coal (TWh)', info.coal_electricity],
+          ['Gas (TWh)', info.gas_electricity],
+          ['Solar (TWh)', info.solar_electricity],
+          ['Wind (TWh)', info.wind_electricity],
+          ['Hydro (TWh)', info.hydro_electricity],
+          ['Nuclear (TWh)', info.nuclear_electricity],
+          ['Renewables (TWh)', info.renewables_electricity]
+        ];
+        fields.forEach(([k,v]) => {
+          const div = document.createElement('div');
+          div.className = 'metric';
+          div.innerHTML = `<div class="label">${k}</div><div class="value">${(v ?? '-')}</div>`;
+          energyEl.appendChild(div);
+        });
+        energyMetaEl.textContent = 'Energy composition sourced from Our World in Data, mapped for your detected region.';
+      });
+
+      socket.on('measurement', (m) => {
+        cpuWEl.textContent = (m.cpuUsageWatts ?? 0).toFixed(4);
+        rssMBEl.textContent = (m.rssDeltaMB ?? 0).toFixed(4);
+        heapUsedMBEl.textContent = (m.heapUsedDeltaMB ?? 0).toFixed(4);
+        co2El.textContent = (m.carbonEmission ?? 0).toFixed(6);
+        elapsedEl.textContent = m.elapsedTimeMs ?? 0;
+        samples.push({
+          ts: m.timestamp,
+          cpu: m.cpuUsageWatts ?? 0,
+          rss: m.rssDeltaMB ?? 0,
+          heap: m.heapUsedDeltaMB ?? 0,
+          co2: m.carbonEmission ?? 0,
+          elapsed: m.elapsedTimeMs ?? 0
+        });
+        addPoint(m.timestamp, {
+          cpu: m.cpuUsageWatts ?? 0,
+          rss: m.rssDeltaMB ?? 0,
+          heap: m.heapUsedDeltaMB ?? 0,
+          co2: m.carbonEmission ?? 0
+        });
+      });
+
+      socket.on('connect', () => { /* no-op */ });
+      socket.on('error', (e) => { console.error(e); });
+
+      startBtn.addEventListener('click', () => socket.emit('start'));
+      stopBtn.addEventListener('click', () => socket.emit('stop'));
+
+      // Export CSV
+      exportBtn.addEventListener('click', () => {
+        if (!samples.length) return alert('No samples yet');
+        const header = ['timestamp,cpu_w,rss_mb,heap_mb,carbon_gco2e,elapsed_ms'];
+        const rows = samples.map(s => [
+          new Date(s.ts).toISOString(),
+          s.cpu,
+          s.rss,
+          s.heap,
+          s.co2,
+          s.elapsed
+        ].join(','));
+        const csv = [header.join(','), ...rows].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `node-carbon-${Date.now()}.csv`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      });
+
+      // Theme toggle
+      themeToggle.addEventListener('change', (e) => {
+        const dark = e.target.checked;
+        document.documentElement.style.setProperty('--bg', dark ? '#0b1020' : '#f7fbff');
+        document.documentElement.style.setProperty('--card', dark ? '#111833' : '#ffffff');
+        document.documentElement.style.setProperty('--text', dark ? '#0f172a' : '#0f172a');
+        document.body.style.background = dark ? 'linear-gradient(180deg,#0b1020,#0a1126)' : '#eef6ff';
+        // Note: charts retain configured colors for clarity across themes
+      });
+    </script>
+  </body>
+  </html>
+
+

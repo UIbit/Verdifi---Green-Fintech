@@ -1,0 +1,32 @@
+{
+  "name": "Node Carbon Dashboard",
+  "description": "Real-time carbon footprint monitoring dashboard",
+  "repository": "https://github.com/yourusername/node-carbon",
+  "logo": "https://nodejs.org/static/images/logo.svg",
+  "keywords": ["node", "carbon", "footprint", "monitoring"],
+  "image": "heroku/nodejs",
+  "buildpacks": [
+    {
+      "url": "heroku/nodejs"
+    }
+  ],
+  "env": {
+    "NODE_ENV": {
+      "required": true,
+      "value": "production"
+    },
+    "ALLOWED_ORIGINS": {
+      "required": false,
+      "description": "Comma-separated list of allowed CORS origins",
+      "value": ""
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "free"
+    }
+  }
+}
+
+
