@@ -4,7 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import NodeCarbon from '../index.js';
-import SecurityMonitor from '../src/securityMonitor.js';
+import ESGFinancialModel from '../src/esgFinancialModel.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,70 +26,116 @@ const io = new SocketIOServer(server, {
 
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
+app.use(express.json()); // For JSON body parsing
 
-// Initialize Security Monitor
-const securityMonitor = new SecurityMonitor();
-
-// Security middleware - monitor all requests
-app.use((req, res, next) => {
-  const ip = req.ip || req.connection.remoteAddress || 'unknown';
-  const userAgent = req.get('user-agent') || 'unknown';
-  
-  // Monitor connection
-  securityMonitor.monitorConnection(ip, userAgent);
-  
-  // Monitor API requests
-  res.on('finish', () => {
-    securityMonitor.monitorAPIRequest(req.path, req.method, res.statusCode);
-  });
-  
-  next();
-});
+// Initialize ESG Financial Model
+const esgModel = new ESGFinancialModel();
 
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Security API endpoint
-app.get('/api/security/stats', (_req, res) => {
-  res.json(securityMonitor.getSecurityStats());
+// ESG API Endpoints
+app.post('/api/esg/calculate', (req, res) => {
+  try {
+    const { metrics } = req.body;
+    const esgScore = esgModel.calculateESGScore(metrics || {});
+    res.json({ success: true, data: esgScore });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
 });
 
-app.get('/api/security/events', (_req, res) => {
-  const limit = parseInt(_req.query.limit) || 20;
-  res.json(securityMonitor.getRecentEvents(limit));
+app.post('/api/esg/financial-impact', (req, res) => {
+  try {
+    const { esgScore, revenue, carbonEmissions } = req.body;
+    const impact = esgModel.calculateFinancialImpact(
+      esgScore || 50,
+      revenue || 1000000,
+      carbonEmissions || 100
+    );
+    res.json({ success: true, data: impact });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/esg/portfolio', (req, res) => {
+  try {
+    const { investments } = req.body;
+    const portfolio = esgModel.calculatePortfolioESG(investments || []);
+    res.json({ success: true, data: portfolio });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/esg/recommendation', (req, res) => {
+  try {
+    const { currentMetrics, targetMetrics, investmentAmount } = req.body;
+    const recommendation = esgModel.generateInvestmentRecommendation(
+      currentMetrics || {},
+      targetMetrics || {},
+      investmentAmount || 100000
+    );
+    res.json({ success: true, data: recommendation });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/esg/carbon-impact', (req, res) => {
+  try {
+    const { carbonEmissions, electricityCost } = req.body;
+    const impact = esgModel.calculateCarbonFinancialImpact(
+      carbonEmissions || 100,
+      electricityCost || 50000
+    );
+    res.json({ success: true, data: impact });
+  } catch (error) {
+    res.status(400).json({ success: false, error: error.message });
+  }
 });
 
 io.on('connection', async (socket) => {
   const nodeCarbon = new NodeCarbon();
-  const clientIP = socket.handshake.address || 'unknown';
-  const userAgent = socket.handshake.headers['user-agent'] || 'unknown';
-
-  // Log secure connection
-  securityMonitor.logEvent('socket_connection', 'low', {
-    ip: clientIP,
-    userAgent,
-    socketId: socket.id
-  });
+  let carbonAccumulator = 0;
 
   // Send static energy info once on connect
   try {
     const energyInfo = await nodeCarbon.getEnergyInfo();
     socket.emit('energyInfo', energyInfo);
+
+    // Calculate initial ESG metrics based on energy info
+    const initialESGMetrics = {
+      carbonFootprint: energyInfo.carbon_intensity_electricity || 400,
+      renewableEnergy: ((energyInfo.renewables_electricity || 0) / 
+                       (energyInfo.coal_electricity + energyInfo.gas_electricity + 
+                        energyInfo.renewables_electricity || 1)) * 100,
+      wasteReduction: 75,
+      employeeSatisfaction: 85,
+      diversity: 60,
+      communityImpact: 70,
+      boardIndependence: 80,
+      transparency: 75,
+      ethicsCompliance: 85
+    };
+
+    const esgScore = esgModel.calculateESGScore(initialESGMetrics);
+    socket.emit('esgScore', esgScore);
+
+    // Calculate financial impact
+    const revenue = 1000000; // Sample revenue
+    const carbonEmissions = (energyInfo.carbon_intensity_electricity || 400) / 1000; // Convert to tons
+    const financialImpact = esgModel.calculateFinancialImpact(
+      esgScore.overall,
+      revenue,
+      carbonEmissions
+    );
+    socket.emit('esgFinancialImpact', financialImpact);
   } catch (err) {
-    securityMonitor.logEvent('energy_info_error', 'medium', { error: err?.message });
     socket.emit('error', { message: 'Failed to load energy info', details: err?.message });
   }
-
-  // Send initial security stats
-  socket.emit('securityStats', securityMonitor.getSecurityStats());
-  socket.emit('securityEvents', securityMonitor.getRecentEvents(10));
-
-  // Send security updates periodically
-  const securityInterval = setInterval(() => {
-    socket.emit('securityStats', securityMonitor.getSecurityStats());
-    socket.emit('securityEvents', securityMonitor.getRecentEvents(10));
-  }, 5000); // Update every 5 seconds
 
   let isClosed = false;
   let loopActive = false;
@@ -100,6 +146,10 @@ io.on('connection', async (socket) => {
       // Short window to gather CPU/memory deltas
       await new Promise((r) => setTimeout(r, 1000));
       const result = await nodeCarbon.stop();
+      
+      // Accumulate carbon for ESG calculations
+      carbonAccumulator += result.carbonEmission || 0;
+      
       socket.emit('measurement', {
         timestamp: Date.now(),
         cpuUsageWatts: result.cpuUsageInfo.cpuUsage,
@@ -110,6 +160,37 @@ io.on('connection', async (socket) => {
         carbonEmission: result.carbonEmission,
         elapsedTimeMs: result.elapsedTime
       });
+
+      // Periodically update ESG financial metrics based on accumulated carbon
+      if (carbonAccumulator > 0.001) {
+        const revenue = 1000000;
+        const carbonTons = carbonAccumulator / 1000; // Convert to tons
+        
+        const esgMetrics = {
+          carbonFootprint: carbonTons * 100,
+          renewableEnergy: 60,
+          wasteReduction: 75,
+          employeeSatisfaction: 85,
+          diversity: 60,
+          communityImpact: 70,
+          boardIndependence: 80,
+          transparency: 75,
+          ethicsCompliance: 85
+        };
+
+        const esgScore = esgModel.calculateESGScore(esgMetrics);
+        const financialImpact = esgModel.calculateFinancialImpact(
+          esgScore.overall,
+          revenue,
+          carbonTons
+        );
+
+        socket.emit('esgUpdate', {
+          esgScore,
+          financialImpact,
+          carbonAccumulated: carbonAccumulator
+        });
+      }
     } catch (err) {
       socket.emit('error', { message: 'Measurement failed', details: err?.message });
     }
@@ -125,21 +206,9 @@ io.on('connection', async (socket) => {
     }
   };
 
-  socket.on('start', () => {
-    securityMonitor.logEvent('measurement_started', 'low', { socketId: socket.id });
-    startLoop();
-  });
-  
-  socket.on('stop', () => {
-    securityMonitor.logEvent('measurement_stopped', 'low', { socketId: socket.id });
-    isClosed = true;
-  });
-  
-  socket.on('disconnect', () => {
-    clearInterval(securityInterval);
-    securityMonitor.logEvent('socket_disconnect', 'low', { socketId: socket.id });
-    isClosed = true;
-  });
+  socket.on('start', () => startLoop());
+  socket.on('stop', () => { isClosed = true; });
+  socket.on('disconnect', () => { isClosed = true; });
 });
 
 const PORT = process.env.PORT || 3000;
