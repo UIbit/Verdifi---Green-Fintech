@@ -3,7 +3,7 @@ services:
     name: node-carbon-dashboard
     env: node
     buildCommand: find . -name "package.json" -type f | head -1 | xargs dirname | xargs -I {} sh -c "cd {} && npm install"
-    startCommand: find . -name "package.json" -type f | head -1 | xargs dirname | xargs -I {} sh -c "cd {} && npm run dashboard"
+    startCommand: bash start.sh
     envVars:
       - key: NODE_ENV
         value: production
