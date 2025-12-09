@@ -517,6 +517,71 @@
         <div class="energy" id="energy"></div>
         <div class="muted" id="energyMeta"></div>
       </div>
+
+      <!-- Cybersecurity Monitoring Panel -->
+      <div class="card" style="margin-top: 24px; border-color: var(--accent);">
+        <h2><i class="fas fa-shield-alt"></i> Cybersecurity Monitoring Dashboard</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 20px;">
+          <div class="metric" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(34, 211, 238, 0.1));">
+            <div class="label"><i class="fas fa-shield-check"></i> Security Health</div>
+            <div class="value" id="securityHealth" style="color: var(--success);">100%</div>
+          </div>
+          <div class="metric" style="background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(245, 158, 11, 0.1));">
+            <div class="label"><i class="fas fa-exclamation-triangle"></i> Threat Level</div>
+            <div class="value" id="threatLevel" style="color: var(--success);">Low</div>
+          </div>
+          <div class="metric">
+            <div class="label"><i class="fas fa-list"></i> Total Events</div>
+            <div class="value" id="totalEvents">0</div>
+          </div>
+          <div class="metric">
+            <div class="label"><i class="fas fa-user-shield"></i> Unique IPs</div>
+            <div class="value" id="uniqueIPs">0</div>
+          </div>
+          <div class="metric">
+            <div class="label"><i class="fas fa-bug"></i> Suspicious Activity</div>
+            <div class="value" id="suspiciousCount" style="color: var(--danger);">0</div>
+          </div>
+          <div class="metric">
+            <div class="label"><i class="fas fa-clock"></i> Uptime</div>
+            <div class="value" id="securityUptime">0s</div>
+          </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin-bottom: 20px;">
+          <div style="text-align: center; padding: 12px; background: rgba(34, 211, 238, 0.1); border-radius: 12px; border: 1px solid var(--border);">
+            <div style="font-size: 24px; font-weight: 700; color: var(--accent);" id="lowEvents">0</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Low</div>
+          </div>
+          <div style="text-align: center; padding: 12px; background: rgba(245, 158, 11, 0.1); border-radius: 12px; border: 1px solid var(--border);">
+            <div style="font-size: 24px; font-weight: 700; color: var(--warning);" id="mediumEvents">0</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Medium</div>
+          </div>
+          <div style="text-align: center; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 12px; border: 1px solid var(--border);">
+            <div style="font-size: 24px; font-weight: 700; color: var(--danger);" id="highEvents">0</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">High</div>
+          </div>
+          <div style="text-align: center; padding: 12px; background: rgba(139, 92, 246, 0.1); border-radius: 12px; border: 1px solid var(--border);">
+            <div style="font-size: 24px; font-weight: 700; color: var(--accent2);" id="criticalEvents">0</div>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Critical</div>
+          </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+          <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--text-muted);">
+            <i class="fas fa-history"></i> Recent Security Events
+          </h3>
+          <div id="securityEvents" style="max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+            <div style="padding: 12px; background: rgba(34, 211, 238, 0.05); border-radius: 8px; border-left: 3px solid var(--accent); font-size: 12px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                <span style="font-weight: 600;">System Initialized</span>
+                <span style="color: var(--text-muted);">Just now</span>
+              </div>
+              <div style="color: var(--text-muted); font-size: 11px;">Security monitoring active</div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <footer>
@@ -547,6 +612,19 @@
       const elapsedEl = document.getElementById('elapsed');
       const energyEl = document.getElementById('energy');
       const energyMetaEl = document.getElementById('energyMeta');
+
+      // Security monitoring elements
+      const securityHealthEl = document.getElementById('securityHealth');
+      const threatLevelEl = document.getElementById('threatLevel');
+      const totalEventsEl = document.getElementById('totalEvents');
+      const uniqueIPsEl = document.getElementById('uniqueIPs');
+      const suspiciousCountEl = document.getElementById('suspiciousCount');
+      const securityUptimeEl = document.getElementById('securityUptime');
+      const lowEventsEl = document.getElementById('lowEvents');
+      const mediumEventsEl = document.getElementById('mediumEvents');
+      const highEventsEl = document.getElementById('highEvents');
+      const criticalEventsEl = document.getElementById('criticalEvents');
+      const securityEventsEl = document.getElementById('securityEvents');
 
       let isRunning = false;
       const samples = [];
@@ -772,6 +850,158 @@
         statusText.textContent = 'Error';
         statusDot.classList.remove('active');
       });
+
+      // Security monitoring handlers
+      socket.on('securityStats', (stats) => {
+        // Update security health score
+        const healthScore = calculateSecurityHealth(stats);
+        securityHealthEl.textContent = healthScore + '%';
+        securityHealthEl.style.color = getHealthColor(healthScore);
+
+        // Update threat level
+        threatLevelEl.textContent = stats.threatLevel.charAt(0).toUpperCase() + stats.threatLevel.slice(1);
+        threatLevelEl.style.color = getThreatColor(stats.threatLevel);
+
+        // Update metrics
+        totalEventsEl.textContent = stats.totalEvents;
+        uniqueIPsEl.textContent = stats.uniqueIPs;
+        suspiciousCountEl.textContent = stats.suspiciousActivity;
+
+        // Update severity counts
+        lowEventsEl.textContent = stats.eventsBySeverity.low;
+        mediumEventsEl.textContent = stats.eventsBySeverity.medium;
+        highEventsEl.textContent = stats.eventsBySeverity.high;
+        criticalEventsEl.textContent = stats.eventsBySeverity.critical;
+
+        // Update uptime
+        const hours = Math.floor(stats.uptime / 3600);
+        const minutes = Math.floor((stats.uptime % 3600) / 60);
+        const seconds = stats.uptime % 60;
+        if (hours > 0) {
+          securityUptimeEl.textContent = `${hours}h ${minutes}m`;
+        } else if (minutes > 0) {
+          securityUptimeEl.textContent = `${minutes}m ${seconds}s`;
+        } else {
+          securityUptimeEl.textContent = `${seconds}s`;
+        }
+      });
+
+      socket.on('securityEvents', (events) => {
+        updateSecurityEvents(events);
+      });
+
+      function calculateSecurityHealth(stats) {
+        let score = 100;
+        score -= stats.eventsBySeverity.high * 5;
+        score -= stats.eventsBySeverity.critical * 10;
+        score -= stats.suspiciousActivity * 3;
+        return Math.max(0, Math.min(100, Math.round(score)));
+      }
+
+      function getHealthColor(score) {
+        if (score >= 80) return 'var(--success)';
+        if (score >= 60) return 'var(--warning)';
+        return 'var(--danger)';
+      }
+
+      function getThreatColor(level) {
+        const colors = {
+          'low': 'var(--success)',
+          'medium': 'var(--warning)',
+          'high': 'var(--danger)',
+          'critical': 'var(--danger)'
+        };
+        return colors[level] || 'var(--text-muted)';
+      }
+
+      function updateSecurityEvents(events) {
+        if (events.length === 0) return;
+
+        // Keep only last 10 events visible
+        securityEventsEl.innerHTML = '';
+        
+        events.slice(0, 10).forEach(event => {
+          const div = document.createElement('div');
+          const timeAgo = getTimeAgo(event.timestamp);
+          const severityColor = getSeverityColor(event.severity);
+          const icon = getEventIcon(event.type);
+
+          div.style.cssText = `
+            padding: 12px;
+            background: rgba(34, 211, 238, 0.05);
+            border-radius: 8px;
+            border-left: 3px solid ${severityColor};
+            font-size: 12px;
+            transition: all 0.3s ease;
+          `;
+
+          div.innerHTML = `
+            <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+              <span style="font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                <i class="${icon}"></i> ${formatEventType(event.type)}
+              </span>
+              <span style="color: var(--text-muted); font-size: 11px;">${timeAgo}</span>
+            </div>
+            <div style="color: var(--text-muted); font-size: 11px; display: flex; justify-content: space-between;">
+              <span>Severity: <span style="color: ${severityColor};">${event.severity.toUpperCase()}</span></span>
+              <span>Threat: ${event.threatLevel}</span>
+            </div>
+          `;
+
+          div.addEventListener('mouseenter', () => {
+            div.style.background = 'rgba(34, 211, 238, 0.1)';
+            div.style.transform = 'translateX(4px)';
+          });
+
+          div.addEventListener('mouseleave', () => {
+            div.style.background = 'rgba(34, 211, 238, 0.05)';
+            div.style.transform = 'translateX(0)';
+          });
+
+          securityEventsEl.insertBefore(div, securityEventsEl.firstChild);
+        });
+      }
+
+      function getSeverityColor(severity) {
+        const colors = {
+          'low': 'var(--accent)',
+          'medium': 'var(--warning)',
+          'high': 'var(--danger)',
+          'critical': 'var(--danger)'
+        };
+        return colors[severity] || 'var(--text-muted)';
+      }
+
+      function getEventIcon(type) {
+        const icons = {
+          'connection': 'fas fa-link',
+          'socket_connection': 'fas fa-plug',
+          'socket_disconnect': 'fas fa-unlink',
+          'unauthorized_access_attempt': 'fas fa-user-lock',
+          'potential_sql_injection': 'fas fa-database',
+          'potential_xss': 'fas fa-code',
+          'suspicious_connection': 'fas fa-exclamation-triangle',
+          'server_error': 'fas fa-server',
+          'measurement_started': 'fas fa-play-circle',
+          'measurement_stopped': 'fas fa-stop-circle'
+        };
+        return icons[type] || 'fas fa-info-circle';
+      }
+
+      function formatEventType(type) {
+        return type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      }
+
+      function getTimeAgo(timestamp) {
+        const seconds = Math.floor((Date.now() - timestamp) / 1000);
+        if (seconds < 60) return `${seconds}s ago`;
+        const minutes = Math.floor(seconds / 60);
+        if (minutes < 60) return `${minutes}m ago`;
+        const hours = Math.floor(minutes / 60);
+        if (hours < 24) return `${hours}h ago`;
+        const days = Math.floor(hours / 24);
+        return `${days}d ago`;
+      }
 
       startBtn.addEventListener('click', () => {
         socket.emit('start');

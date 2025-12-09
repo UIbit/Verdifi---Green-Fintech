@@ -4,6 +4,7 @@ import { Server as SocketIOServer } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import NodeCarbon from '../index.js';
+import SecurityMonitor from '../src/securityMonitor.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -26,20 +27,69 @@ const io = new SocketIOServer(server, {
 const publicDir = path.join(__dirname, 'public');
 app.use(express.static(publicDir));
 
+// Initialize Security Monitor
+const securityMonitor = new SecurityMonitor();
+
+// Security middleware - monitor all requests
+app.use((req, res, next) => {
+  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const userAgent = req.get('user-agent') || 'unknown';
+  
+  // Monitor connection
+  securityMonitor.monitorConnection(ip, userAgent);
+  
+  // Monitor API requests
+  res.on('finish', () => {
+    securityMonitor.monitorAPIRequest(req.path, req.method, res.statusCode);
+  });
+  
+  next();
+});
+
 app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
+// Security API endpoint
+app.get('/api/security/stats', (_req, res) => {
+  res.json(securityMonitor.getSecurityStats());
+});
+
+app.get('/api/security/events', (_req, res) => {
+  const limit = parseInt(_req.query.limit) || 20;
+  res.json(securityMonitor.getRecentEvents(limit));
+});
+
 io.on('connection', async (socket) => {
   const nodeCarbon = new NodeCarbon();
+  const clientIP = socket.handshake.address || 'unknown';
+  const userAgent = socket.handshake.headers['user-agent'] || 'unknown';
+
+  // Log secure connection
+  securityMonitor.logEvent('socket_connection', 'low', {
+    ip: clientIP,
+    userAgent,
+    socketId: socket.id
+  });
 
   // Send static energy info once on connect
   try {
     const energyInfo = await nodeCarbon.getEnergyInfo();
     socket.emit('energyInfo', energyInfo);
   } catch (err) {
+    securityMonitor.logEvent('energy_info_error', 'medium', { error: err?.message });
     socket.emit('error', { message: 'Failed to load energy info', details: err?.message });
   }
+
+  // Send initial security stats
+  socket.emit('securityStats', securityMonitor.getSecurityStats());
+  socket.emit('securityEvents', securityMonitor.getRecentEvents(10));
+
+  // Send security updates periodically
+  const securityInterval = setInterval(() => {
+    socket.emit('securityStats', securityMonitor.getSecurityStats());
+    socket.emit('securityEvents', securityMonitor.getRecentEvents(10));
+  }, 5000); // Update every 5 seconds
 
   let isClosed = false;
   let loopActive = false;
@@ -75,9 +125,21 @@ io.on('connection', async (socket) => {
     }
   };
 
-  socket.on('start', () => startLoop());
-  socket.on('stop', () => { isClosed = true; });
-  socket.on('disconnect', () => { isClosed = true; });
+  socket.on('start', () => {
+    securityMonitor.logEvent('measurement_started', 'low', { socketId: socket.id });
+    startLoop();
+  });
+  
+  socket.on('stop', () => {
+    securityMonitor.logEvent('measurement_stopped', 'low', { socketId: socket.id });
+    isClosed = true;
+  });
+  
+  socket.on('disconnect', () => {
+    clearInterval(securityInterval);
+    securityMonitor.logEvent('socket_disconnect', 'low', { socketId: socket.id });
+    isClosed = true;
+  });
 });
 
 const PORT = process.env.PORT || 3000;
