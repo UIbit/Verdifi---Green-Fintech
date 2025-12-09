@@ -1,0 +1,31 @@
+#!/bin/bash
+# Direct deployment script for Render
+# This script provides the exact commands to use in Render dashboard
+
+echo "=========================================="
+echo "Render Deployment Configuration"
+echo "=========================================="
+echo ""
+echo "Copy these EXACT settings to Render Dashboard:"
+echo ""
+echo "1. Environment: Node"
+echo ""
+echo "2. Build Command:"
+echo "   npm install"
+echo ""
+echo "3. Start Command:"
+echo "   npm run dashboard"
+echo ""
+echo "4. Root Directory: (leave BLANK or set to .)"
+echo ""
+echo "5. Environment Variables:"
+echo "   NODE_ENV=production"
+echo "   PORT=3000"
+echo "   ALLOWED_ORIGINS=https://your-app-name.onrender.com"
+echo ""
+echo "=========================================="
+echo ""
+echo "If the above doesn't work, try this Start Command:"
+echo "   cd /opt/render/project && npm run dashboard"
+echo ""
+
