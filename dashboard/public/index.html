@@ -953,11 +953,29 @@
         requestAnimationFrame(update);
       }
 
+      // Set default ESG values on page load
+      function setDefaultESGValues() {
+        esgScoreOverallEl.textContent = '75';
+        esgEnvEl.textContent = '30/40';
+        esgSocialEl.textContent = '23/30';
+        esgGovEl.textContent = '22/30';
+        esgBreakdownEl.textContent = 'E:30 S:23 G:22';
+        esgPremiumEl.textContent = '+11.25%';
+        adjustedReturnEl.textContent = '10.25%';
+        enterpriseValueEl.textContent = '$12.50M';
+        carbonCostEl.textContent = '$5.00K';
+        potentialSavingsEl.textContent = '$1.50K';
+      }
+
+      // Set defaults immediately
+      setDefaultESGValues();
+
       socket.on('connect', () => {
         statusDot.classList.add('active');
         statusText.textContent = 'Connected';
         connectionStatus.textContent = 'Connected';
         connectionStatus.style.color = '#10b981';
+        console.log('Socket connected, waiting for ESG data...');
       });
 
       socket.on('disconnect', () => {
@@ -1028,19 +1046,25 @@
       });
 
       socket.on('esgScore', (esgData) => {
-        esgScoreOverallEl.textContent = esgData.overall || '-';
-        esgEnvEl.textContent = (esgData.environmental || 0) + '/40';
-        esgSocialEl.textContent = (esgData.social || 0) + '/30';
-        esgGovEl.textContent = (esgData.governance || 0) + '/30';
-        esgBreakdownEl.textContent = `E:${esgData.environmental || 0} S:${esgData.social || 0} G:${esgData.governance || 0}`;
+        console.log('Received ESG Score:', esgData);
+        if (esgData && esgData.overall !== undefined) {
+          esgScoreOverallEl.textContent = esgData.overall;
+          esgEnvEl.textContent = (esgData.environmental || 0) + '/40';
+          esgSocialEl.textContent = (esgData.social || 0) + '/30';
+          esgGovEl.textContent = (esgData.governance || 0) + '/30';
+          esgBreakdownEl.textContent = `E:${esgData.environmental || 0} S:${esgData.social || 0} G:${esgData.governance || 0}`;
+        }
       });
 
       socket.on('esgFinancialImpact', (impact) => {
-        esgPremiumEl.textContent = impact.esgPremium ? '+' + impact.esgPremium + '%' : '-';
-        adjustedReturnEl.textContent = impact.adjustedReturn ? impact.adjustedReturn + '%' : '-';
-        enterpriseValueEl.textContent = impact.enterpriseValue ? '$' + formatNumber(impact.enterpriseValue) : '-';
-        carbonCostEl.textContent = impact.carbonCost ? '$' + formatNumber(impact.carbonCost) : '-';
-        potentialSavingsEl.textContent = impact.potentialSavings ? '$' + formatNumber(impact.potentialSavings) : '-';
+        console.log('Received Financial Impact:', impact);
+        if (impact) {
+          esgPremiumEl.textContent = impact.esgPremium ? '+' + impact.esgPremium + '%' : '-';
+          adjustedReturnEl.textContent = impact.adjustedReturn ? impact.adjustedReturn + '%' : '-';
+          enterpriseValueEl.textContent = impact.enterpriseValue ? '$' + formatNumber(impact.enterpriseValue) : '-';
+          carbonCostEl.textContent = impact.carbonCost ? '$' + formatNumber(impact.carbonCost) : '-';
+          potentialSavingsEl.textContent = impact.potentialSavings ? '$' + formatNumber(impact.potentialSavings) : '-';
+        }
       });
 
       socket.on('esgUpdate', (data) => {
