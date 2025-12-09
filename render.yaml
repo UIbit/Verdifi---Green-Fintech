@@ -2,40 +2,8 @@ services:
   - type: web
     name: node-carbon-dashboard
     env: node
-    buildCommand: |
-      # Try to find package.json in current directory or subdirectories
-      if [ -f package.json ]; then
-        echo "Found package.json in root"
-        npm install
-      elif [ -f */package.json ]; then
-        echo "Found package.json in subdirectory"
-        cd $(find . -name "package.json" -type f | head -1 | xargs dirname)
-        npm install
-      else
-        echo "ERROR: package.json not found"
-        echo "Current directory: $(pwd)"
-        echo "Contents:"
-        ls -la
-        exit 1
-      fi
-    startCommand: |
-      # Try to find package.json and run from that directory
-      if [ -f package.json ]; then
-        echo "Starting from root directory"
-        npm run dashboard
-      else
-        PKG_DIR=$(find . -name "package.json" -type f 2>/dev/null | head -1 | xargs dirname)
-        if [ -n "$PKG_DIR" ]; then
-          echo "Starting from directory: $PKG_DIR"
-          cd "$PKG_DIR" && npm run dashboard
-        else
-          echo "ERROR: package.json not found"
-          echo "Current directory: $(pwd)"
-          echo "Contents:"
-          ls -la
-          exit 1
-        fi
-      fi
+    buildCommand: npm install
+    startCommand: npm run dashboard
     envVars:
       - key: NODE_ENV
         value: production
