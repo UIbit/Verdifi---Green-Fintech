@@ -2,7 +2,18 @@ services:
   - type: web
     name: node-carbon-dashboard
     env: node
-    buildCommand: find . -name "package.json" -type f | head -1 | xargs dirname | xargs -I {} sh -c "cd {} && npm install"
+    buildCommand: |
+      if [ -f package.json ]; then
+        npm install
+      else
+        PKG_PATH=$(find . -name "package.json" -type f 2>/dev/null | head -1)
+        if [ -n "$PKG_PATH" ]; then
+          cd "$(dirname "$PKG_PATH")" && npm install
+        else
+          echo "ERROR: package.json not found"
+          exit 1
+        fi
+      fi
     startCommand: bash start.sh
     envVars:
       - key: NODE_ENV
