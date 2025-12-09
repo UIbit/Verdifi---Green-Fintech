@@ -3,82 +3,530 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Node Carbon Dashboard</title>
+    <title>🌱 Verdifi - Carbon Footprint Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-      :root { --bg:#0b1020; --card:#111833; --text:#e7ecf6; --muted:#94a3b8; --accent:#22d3ee; --accent2:#a78bfa; }
-      *{ box-sizing:border-box; }
-      body{ margin:0; font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto; background:linear-gradient(180deg,#0b1020,#0a1126); color:var(--text); }
-      header{ padding:20px 24px; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #1b2448; position:sticky; top:0; background:#0b1020cc; backdrop-filter:blur(8px); }
-      h1{ margin:0; font-size:20px; letter-spacing:0.3px; }
-      .container{ max-width:1100px; margin:24px auto; padding:0 16px; }
-      .grid{ display:grid; grid-template-columns:1fr; gap:16px; }
-      @media(min-width:900px){ .grid{ grid-template-columns: 2fr 1fr; } }
-      .card{ background:var(--card); border:1px solid #1b2448; border-radius:12px; padding:16px; }
-      .card h2{ margin:0 0 12px; font-size:16px; color:#cbd5e1; }
-      .metrics{ display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-      .metric{ background:#0e1530; border:1px solid #1b2448; border-radius:10px; padding:12px; }
-      .metric .label{ color:var(--muted); font-size:12px; }
-      .metric .value{ font-size:18px; margin-top:6px; font-weight:700; }
-      .controls{ display:flex; gap:10px; align-items:center; }
-      .toggle{ display:inline-flex; gap:8px; align-items:center; color:#cbd5e1; font-size:12px; }
-      .toggle input{ accent-color:#22d3ee; }
-      button{ background:linear-gradient(135deg,var(--accent),var(--accent2)); border:none; color:#05122b; font-weight:700; padding:10px 14px; border-radius:10px; cursor:pointer; }
-      button.secondary{ background:#0e1530; color:#dbe7ff; border:1px solid #1b2448; }
-      .energy{ display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-      .muted{ color:var(--muted); font-size:12px; }
-      canvas{ width:100% !important; height:320px !important; }
-      footer{ text-align:center; padding:16px; color:#7f8ca8; font-size:12px; }
+      :root {
+        --bg: #0a0e27;
+        --card: #141b2d;
+        --card-hover: #1a2332;
+        --text: #e8f0ff;
+        --text-muted: #94a3b8;
+        --accent: #22d3ee;
+        --accent2: #a78bfa;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --border: rgba(34, 211, 238, 0.1);
+        --shadow: rgba(0, 0, 0, 0.3);
+        --glow: rgba(34, 211, 238, 0.3);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1629 100%);
+        color: var(--text);
+        min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      /* Animated background particles */
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+          radial-gradient(circle at 20% 50%, rgba(34, 211, 238, 0.1) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(167, 139, 250, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+        animation: pulse 8s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.5; }
+        50% { opacity: 0.8; }
+      }
+
+      /* Header */
+      header {
+        padding: 24px 32px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        background: rgba(20, 27, 45, 0.8);
+        backdrop-filter: blur(20px);
+        z-index: 100;
+        box-shadow: 0 4px 20px var(--shadow);
+      }
+
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .logo-icon {
+        font-size: 32px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: float 3s ease-in-out infinite;
+      }
+
+      @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-5px); }
+      }
+
+      h1 {
+        font-size: 24px;
+        font-weight: 700;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        letter-spacing: -0.5px;
+      }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 12px;
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      button::before {
+        content: '';
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 0;
+        height: 0;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        transform: translate(-50%, -50%);
+        transition: width 0.6s, height 0.6s;
+      }
+
+      button:hover::before {
+        width: 300px;
+        height: 300px;
+      }
+
+      button:active {
+        transform: scale(0.95);
+      }
+
+      #startBtn {
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #0a0e27;
+        box-shadow: 0 4px 15px rgba(34, 211, 238, 0.3);
+      }
+
+      #startBtn:hover {
+        box-shadow: 0 6px 20px rgba(34, 211, 238, 0.5);
+        transform: translateY(-2px);
+      }
+
+      button.secondary {
+        background: var(--card);
+        color: var(--text);
+        border: 1px solid var(--border);
+      }
+
+      button.secondary:hover {
+        background: var(--card-hover);
+        border-color: var(--accent);
+        transform: translateY(-2px);
+      }
+
+      .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        background: var(--card);
+        border-radius: 20px;
+        font-size: 12px;
+        border: 1px solid var(--border);
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        animation: blink 2s infinite;
+      }
+
+      .status-dot.active {
+        background: var(--success);
+        box-shadow: 0 0 10px var(--success);
+      }
+
+      @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+
+      .container {
+        max-width: 1400px;
+        margin: 32px auto;
+        padding: 0 24px;
+        position: relative;
+        z-index: 1;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 24px;
+        margin-bottom: 24px;
+      }
+
+      @media (min-width: 1024px) {
+        .grid {
+          grid-template-columns: 2fr 1fr;
+        }
+      }
+
+      .card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 24px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 20px var(--shadow);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, var(--accent), var(--accent2));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .card:hover {
+        transform: translateY(-4px);
+        border-color: var(--accent);
+        box-shadow: 0 8px 30px rgba(34, 211, 238, 0.2);
+      }
+
+      .card:hover::before {
+        opacity: 1;
+      }
+
+      .card h2 {
+        margin: 0 0 20px;
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .card h2 i {
+        color: var(--accent);
+      }
+
+      .metrics {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+      }
+
+      .metric {
+        background: linear-gradient(135deg, rgba(34, 211, 238, 0.1), rgba(167, 139, 250, 0.1));
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 20px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .metric::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 100%;
+        height: 100%;
+        background: radial-gradient(circle, rgba(34, 211, 238, 0.1), transparent);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+      }
+
+      .metric:hover {
+        transform: scale(1.05);
+        border-color: var(--accent);
+        box-shadow: 0 4px 15px rgba(34, 211, 238, 0.2);
+      }
+
+      .metric:hover::before {
+        opacity: 1;
+      }
+
+      .metric .label {
+        color: var(--text-muted);
+        font-size: 12px;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .metric .value {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--text);
+        transition: all 0.3s ease;
+      }
+
+      .metric:hover .value {
+        color: var(--accent);
+      }
+
+      .energy {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 16px;
+        margin-top: 16px;
+      }
+
+      .muted {
+        color: var(--text-muted);
+        font-size: 12px;
+        margin-top: 16px;
+        text-align: center;
+        font-style: italic;
+      }
+
+      canvas {
+        width: 100% !important;
+        height: 350px !important;
+        margin-top: 10px;
+      }
+
+      footer {
+        text-align: center;
+        padding: 32px;
+        color: var(--text-muted);
+        font-size: 13px;
+        margin-top: 40px;
+        border-top: 1px solid var(--border);
+      }
+
+      .footer-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+
+      .footer-content a {
+        color: var(--accent);
+        text-decoration: none;
+        transition: color 0.3s ease;
+      }
+
+      .footer-content a:hover {
+        color: var(--accent2);
+      }
+
+      /* Loading animation */
+      @keyframes shimmer {
+        0% { background-position: -1000px 0; }
+        100% { background-position: 1000px 0; }
+      }
+
+      .loading {
+        background: linear-gradient(90deg, 
+          rgba(255,255,255,0.05) 0%, 
+          rgba(255,255,255,0.1) 50%, 
+          rgba(255,255,255,0.05) 100%);
+        background-size: 1000px 100%;
+        animation: shimmer 2s infinite;
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        header {
+          padding: 16px 20px;
+          flex-direction: column;
+          gap: 16px;
+        }
+
+        .controls {
+          width: 100%;
+          justify-content: center;
+          flex-wrap: wrap;
+        }
+
+        button {
+          flex: 1;
+          min-width: 100px;
+        }
+
+        .container {
+          padding: 0 16px;
+        }
+
+        .metrics {
+          grid-template-columns: 1fr;
+        }
+      }
+
+      /* Chart container improvements */
+      .chart-container {
+        position: relative;
+        height: 350px;
+        margin-top: 10px;
+      }
+
+      /* Badge styles */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        background: rgba(34, 211, 238, 0.1);
+        border: 1px solid var(--accent);
+        border-radius: 12px;
+        font-size: 11px;
+        color: var(--accent);
+        font-weight: 600;
+      }
     </style>
   </head>
   <body>
     <header>
-      <h1>🌱 Node Carbon Live Dashboard</h1>
+      <div class="logo">
+        <div class="logo-icon">🌱</div>
+        <h1>Verdifi - Carbon Dashboard</h1>
+      </div>
       <div class="controls">
-        <div class="toggle">
-          <label for="themeToggle">Light</label>
-          <input type="checkbox" id="themeToggle" />
-          <label for="themeToggle">Dark</label>
+        <div class="status-indicator">
+          <div class="status-dot" id="statusDot"></div>
+          <span id="statusText">Ready</span>
         </div>
-        <button id="startBtn">Start</button>
-        <button id="stopBtn" class="secondary">Stop</button>
-        <button id="exportBtn" class="secondary">Export CSV</button>
+        <button id="startBtn">
+          <i class="fas fa-play"></i>
+          Start
+        </button>
+        <button id="stopBtn" class="secondary">
+          <i class="fas fa-stop"></i>
+          Stop
+        </button>
+        <button id="exportBtn" class="secondary">
+          <i class="fas fa-download"></i>
+          Export
+        </button>
       </div>
     </header>
 
     <div class="container">
       <div class="grid" id="chartsGrid">
         <div class="card">
-          <h2>CPU & Memory</h2>
-          <canvas id="cpuMemChart"></canvas>
+          <h2><i class="fas fa-microchip"></i> CPU & Memory Usage</h2>
+          <div class="chart-container">
+            <canvas id="cpuMemChart"></canvas>
+          </div>
         </div>
         <div class="card">
-          <h2>Carbon Emission</h2>
-          <canvas id="carbonChart"></canvas>
+          <h2><i class="fas fa-leaf"></i> Carbon Emission</h2>
+          <div class="chart-container">
+            <canvas id="carbonChart"></canvas>
+          </div>
         </div>
         <div class="card">
-          <h2>Current Snapshot</h2>
+          <h2><i class="fas fa-chart-line"></i> Current Metrics</h2>
           <div class="metrics" id="metrics">
-            <div class="metric"><div class="label">CPU Usage (W)</div><div class="value" id="cpuW">-</div></div>
-            <div class="metric"><div class="label">RSS Δ (MB)</div><div class="value" id="rssMB">-</div></div>
-            <div class="metric"><div class="label">Heap Used Δ (MB)</div><div class="value" id="heapUsedMB">-</div></div>
-            <div class="metric"><div class="label">Carbon (gCO2e)</div><div class="value" id="co2">-</div></div>
-            <div class="metric"><div class="label">Elapsed (ms)</div><div class="value" id="elapsed">-</div></div>
+            <div class="metric">
+              <div class="label"><i class="fas fa-bolt"></i> CPU Usage</div>
+              <div class="value" id="cpuW">-</div>
+            </div>
+            <div class="metric">
+              <div class="label"><i class="fas fa-memory"></i> RSS Δ</div>
+              <div class="value" id="rssMB">-</div>
+            </div>
+            <div class="metric">
+              <div class="label"><i class="fas fa-database"></i> Heap Used Δ</div>
+              <div class="value" id="heapUsedMB">-</div>
+            </div>
+            <div class="metric">
+              <div class="label"><i class="fas fa-cloud"></i> Carbon (gCO2e)</div>
+              <div class="value" id="co2">-</div>
+            </div>
+            <div class="metric">
+              <div class="label"><i class="fas fa-clock"></i> Elapsed Time</div>
+              <div class="value" id="elapsed">-</div>
+            </div>
+            <div class="metric">
+              <div class="label"><i class="fas fa-globe"></i> Status</div>
+              <div class="value" id="connectionStatus">Connected</div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div class="card" style="margin-top:16px;">
-        <h2>Regional Energy Mix</h2>
+      <div class="card" style="margin-top: 24px;">
+        <h2><i class="fas fa-globe-americas"></i> Regional Energy Mix</h2>
         <div class="energy" id="energy"></div>
         <div class="muted" id="energyMeta"></div>
       </div>
     </div>
 
     <footer>
-      Built with Socket.IO + Chart.js · Real-time Node process carbon metrics
+      <div class="footer-content">
+        <span>Built with <i class="fas fa-heart" style="color: var(--danger);"></i> using Socket.IO & Chart.js</span>
+        <span>•</span>
+        <span>Real-time Carbon Footprint Monitoring</span>
+        <span>•</span>
+        <span>Verdifi Green Fintech Platform</span>
+      </div>
     </footer>
 
     <script src="https://cdn.socket.io/4.7.2/socket.io.min.js" crossorigin="anonymous"></script>
@@ -88,7 +536,9 @@
       const startBtn = document.getElementById('startBtn');
       const stopBtn = document.getElementById('stopBtn');
       const exportBtn = document.getElementById('exportBtn');
-      const themeToggle = document.getElementById('themeToggle');
+      const statusDot = document.getElementById('statusDot');
+      const statusText = document.getElementById('statusText');
+      const connectionStatus = document.getElementById('connectionStatus');
 
       const cpuWEl = document.getElementById('cpuW');
       const rssMBEl = document.getElementById('rssMB');
@@ -98,93 +548,208 @@
       const energyEl = document.getElementById('energy');
       const energyMetaEl = document.getElementById('energyMeta');
 
-      // Data buffers for export
-      const samples = []; // {ts,cpu,rss,heap,co2,elapsed}
+      let isRunning = false;
+      const samples = [];
 
-      // Charts
+      // Charts with enhanced styling
       const carbonCtx = document.getElementById('carbonChart').getContext('2d');
       const cpuMemCtx = document.getElementById('cpuMemChart').getContext('2d');
 
       const baseOptions = {
         responsive: true,
-        plugins: { legend: { labels: { color: '#cbd5e1' } } },
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: {
+              color: '#cbd5e1',
+              font: { size: 12, weight: '500' },
+              padding: 15
+            }
+          },
+          tooltip: {
+            backgroundColor: 'rgba(20, 27, 45, 0.95)',
+            titleColor: '#e8f0ff',
+            bodyColor: '#cbd5e1',
+            borderColor: '#22d3ee',
+            borderWidth: 1,
+            padding: 12,
+            cornerRadius: 8
+          }
+        },
         scales: {
-          x: { ticks: { color: '#9aa8c7' }, grid: { color: '#1b2448' } },
-          y: { ticks: { color: '#9aa8c7' }, grid: { color: '#1b2448' } }
+          x: {
+            ticks: { color: '#9aa8c7', font: { size: 11 } },
+            grid: { color: 'rgba(34, 211, 238, 0.1)' }
+          },
+          y: {
+            ticks: { color: '#9aa8c7', font: { size: 11 } },
+            grid: { color: 'rgba(34, 211, 238, 0.1)' }
+          }
         }
       };
 
       const carbonChart = new Chart(carbonCtx, {
         type: 'line',
-        data: { labels: [], datasets: [
-          { label: 'Carbon (gCO2e)', data: [], borderColor: '#10b981', backgroundColor: 'rgba(16,185,129,0.15)', fill:true, tension:0.35 }
-        ]},
+        data: {
+          labels: [],
+          datasets: [{
+            label: 'Carbon Emission (gCO2e)',
+            data: [],
+            borderColor: '#10b981',
+            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+            fill: true,
+            tension: 0.4,
+            borderWidth: 2,
+            pointRadius: 3,
+            pointHoverRadius: 6,
+            pointBackgroundColor: '#10b981',
+            pointBorderColor: '#fff',
+            pointBorderWidth: 2
+          }]
+        },
         options: baseOptions
       });
 
       const cpuMemChart = new Chart(cpuMemCtx, {
         type: 'line',
-        data: { labels: [], datasets: [
-          { label: 'CPU (W)', data: [], borderColor: '#22d3ee', backgroundColor: 'rgba(34,211,238,0.15)', fill:true, tension:0.35 },
-          { label: 'RSS Δ (MB)', data: [], borderColor: '#a78bfa', backgroundColor: 'rgba(167,139,250,0.15)', fill:true, tension:0.35 },
-          { label: 'Heap Δ (MB)', data: [], borderColor: '#f43f5e', backgroundColor: 'rgba(244,63,94,0.15)', fill:true, tension:0.35 }
-        ]},
+        data: {
+          labels: [],
+          datasets: [
+            {
+              label: 'CPU (W)',
+              data: [],
+              borderColor: '#22d3ee',
+              backgroundColor: 'rgba(34, 211, 238, 0.2)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'RSS Δ (MB)',
+              data: [],
+              borderColor: '#a78bfa',
+              backgroundColor: 'rgba(167, 139, 250, 0.2)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 6
+            },
+            {
+              label: 'Heap Δ (MB)',
+              data: [],
+              borderColor: '#f43f5e',
+              backgroundColor: 'rgba(244, 63, 94, 0.2)',
+              fill: true,
+              tension: 0.4,
+              borderWidth: 2,
+              pointRadius: 3,
+              pointHoverRadius: 6
+            }
+          ]
+        },
         options: baseOptions
       });
 
-      function addPoint(ts, values){
-        const maxPoints = 120; // ~4 minutes at 2s cadence
+      function addPoint(ts, values) {
+        const maxPoints = 120;
         const label = new Date(ts).toLocaleTimeString();
 
-        // CPU/Mem chart
         cpuMemChart.data.labels.push(label);
         cpuMemChart.data.datasets[0].data.push(values.cpu);
         cpuMemChart.data.datasets[1].data.push(values.rss);
         cpuMemChart.data.datasets[2].data.push(values.heap);
-        if(cpuMemChart.data.labels.length > maxPoints){
+        if (cpuMemChart.data.labels.length > maxPoints) {
           cpuMemChart.data.labels.shift();
           cpuMemChart.data.datasets.forEach(ds => ds.data.shift());
         }
         cpuMemChart.update('none');
 
-        // Carbon chart
         carbonChart.data.labels.push(label);
         carbonChart.data.datasets[0].data.push(values.co2);
-        if(carbonChart.data.labels.length > maxPoints){
+        if (carbonChart.data.labels.length > maxPoints) {
           carbonChart.data.labels.shift();
           carbonChart.data.datasets.forEach(ds => ds.data.shift());
         }
         carbonChart.update('none');
       }
 
+      function animateValue(element, start, end, duration) {
+        const startTime = performance.now();
+        const startVal = parseFloat(start) || 0;
+        const endVal = parseFloat(end) || 0;
+
+        function update(currentTime) {
+          const elapsed = currentTime - startTime;
+          const progress = Math.min(elapsed / duration, 1);
+          const current = startVal + (endVal - startVal) * progress;
+          element.textContent = current.toFixed(4);
+          if (progress < 1) {
+            requestAnimationFrame(update);
+          }
+        }
+        requestAnimationFrame(update);
+      }
+
+      socket.on('connect', () => {
+        statusDot.classList.add('active');
+        statusText.textContent = 'Connected';
+        connectionStatus.textContent = 'Connected';
+        connectionStatus.style.color = '#10b981';
+      });
+
+      socket.on('disconnect', () => {
+        statusDot.classList.remove('active');
+        statusText.textContent = 'Disconnected';
+        connectionStatus.textContent = 'Disconnected';
+        connectionStatus.style.color = '#ef4444';
+      });
+
       socket.on('energyInfo', (info) => {
         energyEl.innerHTML = '';
         const fields = [
-          ['Country', info.country],
-          ['Carbon Intensity (gCO2e/kWh)', info.carbon_intensity_electricity],
-          ['Coal (TWh)', info.coal_electricity],
-          ['Gas (TWh)', info.gas_electricity],
-          ['Solar (TWh)', info.solar_electricity],
-          ['Wind (TWh)', info.wind_electricity],
-          ['Hydro (TWh)', info.hydro_electricity],
-          ['Nuclear (TWh)', info.nuclear_electricity],
-          ['Renewables (TWh)', info.renewables_electricity]
+          ['Country', info.country, 'fas fa-flag'],
+          ['Carbon Intensity', `${info.carbon_intensity_electricity} gCO2e/kWh`, 'fas fa-fire'],
+          ['Coal', `${info.coal_electricity} TWh`, 'fas fa-industry'],
+          ['Gas', `${info.gas_electricity} TWh`, 'fas fa-gas-pump'],
+          ['Solar', `${info.solar_electricity} TWh`, 'fas fa-sun'],
+          ['Wind', `${info.wind_electricity} TWh`, 'fas fa-wind'],
+          ['Hydro', `${info.hydro_electricity} TWh`, 'fas fa-water'],
+          ['Nuclear', `${info.nuclear_electricity} TWh`, 'fas fa-atom'],
+          ['Renewables', `${info.renewables_electricity} TWh`, 'fas fa-leaf']
         ];
-        fields.forEach(([k,v]) => {
+        fields.forEach(([k, v, icon]) => {
           const div = document.createElement('div');
           div.className = 'metric';
-          div.innerHTML = `<div class="label">${k}</div><div class="value">${(v ?? '-')}</div>`;
+          div.innerHTML = `
+            <div class="label"><i class="${icon}"></i> ${k}</div>
+            <div class="value">${(v ?? '-')}</div>
+          `;
           energyEl.appendChild(div);
         });
         energyMetaEl.textContent = 'Energy composition sourced from Our World in Data, mapped for your detected region.';
       });
 
       socket.on('measurement', (m) => {
-        cpuWEl.textContent = (m.cpuUsageWatts ?? 0).toFixed(4);
-        rssMBEl.textContent = (m.rssDeltaMB ?? 0).toFixed(4);
-        heapUsedMBEl.textContent = (m.heapUsedDeltaMB ?? 0).toFixed(4);
-        co2El.textContent = (m.carbonEmission ?? 0).toFixed(6);
+        if (!isRunning) {
+          isRunning = true;
+          statusText.textContent = 'Monitoring';
+          statusDot.classList.add('active');
+        }
+
+        const oldCpu = cpuWEl.textContent;
+        const oldRss = rssMBEl.textContent;
+        const oldHeap = heapUsedMBEl.textContent;
+        const oldCo2 = co2El.textContent;
+
+        animateValue(cpuWEl, oldCpu, m.cpuUsageWatts ?? 0, 500);
+        animateValue(rssMBEl, oldRss, m.rssDeltaMB ?? 0, 500);
+        animateValue(heapUsedMBEl, oldHeap, m.heapUsedDeltaMB ?? 0, 500);
+        animateValue(co2El, oldCo2, m.carbonEmission ?? 0, 500);
         elapsedEl.textContent = m.elapsedTimeMs ?? 0;
+
         samples.push({
           ts: m.timestamp,
           cpu: m.cpuUsageWatts ?? 0,
@@ -193,6 +758,7 @@
           co2: m.carbonEmission ?? 0,
           elapsed: m.elapsedTimeMs ?? 0
         });
+
         addPoint(m.timestamp, {
           cpu: m.cpuUsageWatts ?? 0,
           rss: m.rssDeltaMB ?? 0,
@@ -201,15 +767,32 @@
         });
       });
 
-      socket.on('connect', () => { /* no-op */ });
-      socket.on('error', (e) => { console.error(e); });
+      socket.on('error', (e) => {
+        console.error('Socket error:', e);
+        statusText.textContent = 'Error';
+        statusDot.classList.remove('active');
+      });
 
-      startBtn.addEventListener('click', () => socket.emit('start'));
-      stopBtn.addEventListener('click', () => socket.emit('stop'));
+      startBtn.addEventListener('click', () => {
+        socket.emit('start');
+        startBtn.disabled = true;
+        stopBtn.disabled = false;
+        isRunning = true;
+      });
 
-      // Export CSV
+      stopBtn.addEventListener('click', () => {
+        socket.emit('stop');
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+        isRunning = false;
+        statusText.textContent = 'Stopped';
+      });
+
       exportBtn.addEventListener('click', () => {
-        if (!samples.length) return alert('No samples yet');
+        if (!samples.length) {
+          alert('No samples yet. Start monitoring first!');
+          return;
+        }
         const header = ['timestamp,cpu_w,rss_mb,heap_mb,carbon_gco2e,elapsed_ms'];
         const rows = samples.map(s => [
           new Date(s.ts).toISOString(),
@@ -224,24 +807,12 @@
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `node-carbon-${Date.now()}.csv`;
+        a.download = `verdifi-carbon-${Date.now()}.csv`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       });
-
-      // Theme toggle
-      themeToggle.addEventListener('change', (e) => {
-        const dark = e.target.checked;
-        document.documentElement.style.setProperty('--bg', dark ? '#0b1020' : '#f7fbff');
-        document.documentElement.style.setProperty('--card', dark ? '#111833' : '#ffffff');
-        document.documentElement.style.setProperty('--text', dark ? '#0f172a' : '#0f172a');
-        document.body.style.background = dark ? 'linear-gradient(180deg,#0b1020,#0a1126)' : '#eef6ff';
-        // Note: charts retain configured colors for clarity across themes
-      });
     </script>
   </body>
-  </html>
-
-
+</html>
