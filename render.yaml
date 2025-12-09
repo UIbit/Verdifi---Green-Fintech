@@ -14,7 +14,21 @@ services:
           exit 1
         fi
       fi
-    startCommand: bash start.sh
+    startCommand: |
+      if [ -f package.json ]; then
+        npm run dashboard
+      else
+        PKG_PATH=$(find . -name "package.json" -type f 2>/dev/null | head -1)
+        if [ -n "$PKG_PATH" ]; then
+          cd "$(dirname "$PKG_PATH")" && npm run dashboard
+        else
+          echo "ERROR: package.json not found"
+          echo "Current directory: $(pwd)"
+          echo "Contents:"
+          ls -la
+          exit 1
+        fi
+      fi
     envVars:
       - key: NODE_ENV
         value: production
