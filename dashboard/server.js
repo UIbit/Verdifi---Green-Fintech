@@ -3,14 +3,23 @@ import http from 'http';
 import { Server as SocketIOServer } from 'socket.io';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import session from 'express-session';
+import MongoStore from 'connect-mongo';
 import NodeCarbon from '../index.js';
 import ESGFinancialModel from '../src/esgFinancialModel.js';
+import connectDB from '../src/config/database.js';
+import authRoutes from '../src/routes/auth.js';
+import { requireAuth, requireGuest } from '../src/middleware/auth.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// Connect to MongoDB
+connectDB();
+
 const app = express();
 const server = http.createServer(app);
+
 // CORS configuration - use environment variable for allowed origins
 const allowedOrigins = process.env.ALLOWED_ORIGINS 
   ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
@@ -25,8 +34,62 @@ const io = new SocketIOServer(server, {
 });
 
 const publicDir = path.join(__dirname, 'public');
+
+// Session configuration
+const sessionMiddleware = session({
+  secret: process.env.SESSION_SECRET || 'verdifi-secret-key-change-in-production',
+  resave: false,
+  saveUninitialized: false,
+  store: MongoStore.create({
+    mongoUrl: process.env.MONGODB_URI || 'mongodb://localhost:27017/verdifi',
+    ttl: 14 * 24 * 60 * 60 // 14 days
+  }),
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    httpOnly: true,
+    maxAge: 14 * 24 * 60 * 60 * 1000 // 14 days
+  }
+});
+
+app.use(sessionMiddleware);
+
+// Share session with Socket.IO
+io.use((socket, next) => {
+  sessionMiddleware(socket.request, {}, next);
+});
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Auth routes (must be before static files)
+app.use('/api/auth', authRoutes);
+
+// Serve login page
+app.get('/login', requireGuest, (req, res) => {
+  res.sendFile(path.join(publicDir, 'login.html'));
+});
+
+app.get('/signup', requireGuest, (req, res) => {
+  res.sendFile(path.join(publicDir, 'login.html'));
+});
+
+// Serve dashboard (protected)
+app.get('/dashboard', requireAuth, (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
+});
+
+// Root redirects to login or dashboard
+app.get('/', (req, res) => {
+  if (req.session && req.session.userId) {
+    res.redirect('/dashboard');
+  } else {
+    res.redirect('/login');
+  }
+});
+
+// Static files (after routes)
 app.use(express.static(publicDir));
-app.use(express.json()); // For JSON body parsing
 
 // Initialize ESG Financial Model
 const esgModel = new ESGFinancialModel();
@@ -97,7 +160,21 @@ app.post('/api/esg/carbon-impact', (req, res) => {
   }
 });
 
+// Socket.IO authentication middleware
+io.use((socket, next) => {
+  const session = socket.request.session;
+  if (session && session.userId) {
+    next();
+  } else {
+    socket.emit('authError', { message: 'Authentication required' });
+    next(new Error('Authentication required'));
+  }
+});
+
 io.on('connection', async (socket) => {
+  const session = socket.request.session;
+  console.log(`User connected: ${session.username || session.userId}`);
+  
   const nodeCarbon = new NodeCarbon();
   let carbonAccumulator = 0;
 

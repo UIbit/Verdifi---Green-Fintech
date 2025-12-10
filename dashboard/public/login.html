@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - Verdifi Green Fintech</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+      :root {
+        --bg: #0a0e27;
+        --card: #141b2d;
+        --text: #e8f0ff;
+        --text-muted: #94a3b8;
+        --accent: #22d3ee;
+        --accent2: #a78bfa;
+        --success: #10b981;
+        --danger: #ef4444;
+        --border: rgba(34, 211, 238, 0.1);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: 'Inter', system-ui, sans-serif;
+        background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 50%, #0f1629 100%);
+        color: var(--text);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+
+      body::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: 
+          radial-gradient(circle at 20% 50%, rgba(34, 211, 238, 0.15) 0%, transparent 50%),
+          radial-gradient(circle at 80% 80%, rgba(167, 139, 250, 0.15) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+        animation: pulse 8s ease-in-out infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% { opacity: 0.5; transform: scale(1); }
+        50% { opacity: 0.8; transform: scale(1.05); }
+      }
+
+      .login-container {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 48px;
+        width: 100%;
+        max-width: 450px;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        position: relative;
+        z-index: 1;
+        animation: slideUp 0.6s ease-out;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .logo {
+        text-align: center;
+        margin-bottom: 32px;
+      }
+
+      .logo-icon {
+        font-size: 64px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: float-icon 3s ease-in-out infinite;
+        display: inline-block;
+        margin-bottom: 12px;
+      }
+
+      @keyframes float-icon {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+      }
+
+      .logo h1 {
+        font-size: 32px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        margin-bottom: 8px;
+      }
+
+      .logo p {
+        color: var(--text-muted);
+        font-size: 14px;
+      }
+
+      .tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 32px;
+        background: rgba(34, 211, 238, 0.1);
+        padding: 4px;
+        border-radius: 12px;
+      }
+
+      .tab {
+        flex: 1;
+        padding: 12px;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-weight: 600;
+        font-size: 14px;
+        cursor: pointer;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+      }
+
+      .tab.active {
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        color: #0a0e27;
+      }
+
+      .form-container {
+        display: none;
+      }
+
+      .form-container.active {
+        display: block;
+        animation: fadeIn 0.3s ease;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        color: var(--text);
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .form-group input {
+        width: 100%;
+        padding: 14px 16px;
+        background: rgba(34, 211, 238, 0.05);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        color: var(--text);
+        font-size: 14px;
+        transition: all 0.3s ease;
+      }
+
+      .form-group input:focus {
+        outline: none;
+        border-color: var(--accent);
+        background: rgba(34, 211, 238, 0.1);
+        box-shadow: 0 0 0 3px rgba(34, 211, 238, 0.1);
+      }
+
+      .form-group input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .submit-btn {
+        width: 100%;
+        padding: 16px;
+        background: linear-gradient(135deg, var(--accent), var(--accent2));
+        border: none;
+        border-radius: 12px;
+        color: #0a0e27;
+        font-weight: 700;
+        font-size: 16px;
+        cursor: pointer;
+        margin-top: 8px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(34, 211, 238, 0.4);
+      }
+
+      .submit-btn:active {
+        transform: translateY(0);
+      }
+
+      .submit-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+
+      .error-message {
+        background: rgba(239, 68, 68, 0.1);
+        border: 1px solid var(--danger);
+        color: var(--danger);
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        display: none;
+        animation: shake 0.5s;
+      }
+
+      .error-message.show {
+        display: block;
+      }
+
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-10px); }
+        75% { transform: translateX(10px); }
+      }
+
+      .success-message {
+        background: rgba(16, 185, 129, 0.1);
+        border: 1px solid var(--success);
+        color: var(--success);
+        padding: 12px 16px;
+        border-radius: 12px;
+        margin-bottom: 20px;
+        font-size: 14px;
+        display: none;
+      }
+
+      .success-message.show {
+        display: block;
+      }
+
+      .input-icon {
+        position: relative;
+      }
+
+      .input-icon i {
+        position: absolute;
+        left: 16px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted);
+      }
+
+      .input-icon input {
+        padding-left: 45px;
+      }
+
+      @media (max-width: 500px) {
+        .login-container {
+          padding: 32px 24px;
+          margin: 20px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="login-container">
+      <div class="logo">
+        <div class="logo-icon">🌱</div>
+        <h1>Verdifi</h1>
+        <p>Green Fintech Platform</p>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" id="loginTab" onclick="switchTab('login')">
+          <i class="fas fa-sign-in-alt"></i> Login
+        </button>
+        <button class="tab" id="signupTab" onclick="switchTab('signup')">
+          <i class="fas fa-user-plus"></i> Sign Up
+        </button>
+      </div>
+
+      <div id="errorMessage" class="error-message"></div>
+      <div id="successMessage" class="success-message"></div>
+
+      <!-- Login Form -->
+      <div id="loginForm" class="form-container active">
+        <form id="loginFormElement" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label><i class="fas fa-envelope"></i> Email</label>
+            <div class="input-icon">
+              <i class="fas fa-envelope"></i>
+              <input 
+                type="email" 
+                id="loginEmail" 
+                placeholder="Enter your email" 
+                required
+                autocomplete="email"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-lock"></i> Password</label>
+            <div class="input-icon">
+              <i class="fas fa-lock"></i>
+              <input 
+                type="password" 
+                id="loginPassword" 
+                placeholder="Enter your password" 
+                required
+                minlength="6"
+                autocomplete="current-password"
+              />
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" id="loginBtn">
+            <i class="fas fa-sign-in-alt"></i> Login
+          </button>
+        </form>
+      </div>
+
+      <!-- Signup Form -->
+      <div id="signupForm" class="form-container">
+        <form id="signupFormElement" onsubmit="handleSignup(event)">
+          <div class="form-group">
+            <label><i class="fas fa-user"></i> Username</label>
+            <div class="input-icon">
+              <i class="fas fa-user"></i>
+              <input 
+                type="text" 
+                id="signupUsername" 
+                placeholder="Choose a username" 
+                required
+                minlength="3"
+                maxlength="30"
+                autocomplete="username"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-envelope"></i> Email</label>
+            <div class="input-icon">
+              <i class="fas fa-envelope"></i>
+              <input 
+                type="email" 
+                id="signupEmail" 
+                placeholder="Enter your email" 
+                required
+                autocomplete="email"
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-lock"></i> Password</label>
+            <div class="input-icon">
+              <i class="fas fa-lock"></i>
+              <input 
+                type="password" 
+                id="signupPassword" 
+                placeholder="Minimum 6 characters" 
+                required
+                minlength="6"
+                autocomplete="new-password"
+              />
+            </div>
+          </div>
+          <button type="submit" class="submit-btn" id="signupBtn">
+            <i class="fas fa-user-plus"></i> Create Account
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script>
+      function switchTab(tab) {
+        const loginTab = document.getElementById('loginTab');
+        const signupTab = document.getElementById('signupTab');
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const errorMsg = document.getElementById('errorMessage');
+        const successMsg = document.getElementById('successMessage');
+
+        // Hide messages
+        errorMsg.classList.remove('show');
+        successMsg.classList.remove('show');
+
+        if (tab === 'login') {
+          loginTab.classList.add('active');
+          signupTab.classList.remove('active');
+          loginForm.classList.add('active');
+          signupForm.classList.remove('active');
+        } else {
+          signupTab.classList.add('active');
+          loginTab.classList.remove('active');
+          signupForm.classList.add('active');
+          loginForm.classList.remove('active');
+        }
+      }
+
+      function showError(message) {
+        const errorMsg = document.getElementById('errorMessage');
+        errorMsg.textContent = message;
+        errorMsg.classList.add('show');
+        document.getElementById('successMessage').classList.remove('show');
+      }
+
+      function showSuccess(message) {
+        const successMsg = document.getElementById('successMessage');
+        successMsg.textContent = message;
+        successMsg.classList.add('show');
+        document.getElementById('errorMessage').classList.remove('show');
+      }
+
+      async function handleLogin(event) {
+        event.preventDefault();
+        const btn = document.getElementById('loginBtn');
+        const email = document.getElementById('loginEmail').value;
+        const password = document.getElementById('loginPassword').value;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+
+        try {
+          const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email, password }),
+            credentials: 'include'
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            showSuccess('Login successful! Redirecting...');
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1000);
+          } else {
+            showError(data.error || 'Login failed');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+          }
+        } catch (error) {
+          showError('Network error. Please try again.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+        }
+      }
+
+      async function handleSignup(event) {
+        event.preventDefault();
+        const btn = document.getElementById('signupBtn');
+        const username = document.getElementById('signupUsername').value;
+        const email = document.getElementById('signupEmail').value;
+        const password = document.getElementById('signupPassword').value;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating account...';
+
+        try {
+          const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, email, password }),
+            credentials: 'include'
+          });
+
+          const data = await response.json();
+
+          if (data.success) {
+            showSuccess('Account created successfully! Redirecting...');
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1000);
+          } else {
+            showError(data.error || 'Signup failed');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+          }
+        } catch (error) {
+          showError('Network error. Please try again.');
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+        }
+      }
+
+      // Check if already logged in
+      window.addEventListener('DOMContentLoaded', async () => {
+        try {
+          const response = await fetch('/api/auth/status', {
+            credentials: 'include'
+          });
+          const data = await response.json();
+          if (data.authenticated) {
+            window.location.href = '/dashboard';
+          }
+        } catch (error) {
+          console.error('Error checking auth status:', error);
+        }
+      });
+    </script>
+  </body>
+</html>
+

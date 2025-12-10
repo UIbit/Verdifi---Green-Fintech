@@ -608,6 +608,10 @@
           <i class="fas fa-download"></i>
           Export
         </button>
+        <button id="logoutBtn" class="secondary" style="background: rgba(239, 68, 68, 0.2); border-color: var(--danger);">
+          <i class="fas fa-sign-out-alt"></i>
+          Logout
+        </button>
       </div>
     </header>
 
@@ -1097,6 +1101,11 @@
         statusDot.classList.remove('active');
       });
 
+      socket.on('authError', (data) => {
+        alert('Authentication required. Please login again.');
+        window.location.href = '/login';
+      });
+
       startBtn.addEventListener('click', () => {
         socket.emit('start');
         startBtn.disabled = true;
@@ -1146,6 +1155,23 @@
         URL.revokeObjectURL(url);
       });
 
+      // Logout functionality
+      document.getElementById('logoutBtn').addEventListener('click', async () => {
+        try {
+          const response = await fetch('/api/auth/logout', {
+            method: 'POST',
+            credentials: 'include'
+          });
+          const data = await response.json();
+          if (data.success) {
+            window.location.href = '/login';
+          }
+        } catch (error) {
+          console.error('Logout error:', error);
+          window.location.href = '/login';
+        }
+      });
+
       // Add click sound effect simulation with visual feedback
       document.querySelectorAll('button, .metric').forEach(el => {
         el.addEventListener('click', function() {
@@ -1154,6 +1180,25 @@
             this.style.transform = '';
           }, 150);
         });
+      });
+
+      // Display username if available
+      window.addEventListener('DOMContentLoaded', async () => {
+        try {
+          const response = await fetch('/api/auth/status', {
+            credentials: 'include'
+          });
+          const data = await response.json();
+          if (data.authenticated && data.user) {
+            // Optionally display username in header
+            const statusText = document.getElementById('statusText');
+            if (statusText) {
+              statusText.textContent = `Welcome, ${data.user.username}`;
+            }
+          }
+        } catch (error) {
+          console.error('Error checking auth:', error);
+        }
       });
     </script>
   </body>
