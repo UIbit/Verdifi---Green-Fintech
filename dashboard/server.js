@@ -65,27 +65,23 @@ app.use(express.urlencoded({ extended: true }));
 // Auth routes (must be before static files)
 app.use('/api/auth', authRoutes);
 
-// Serve login page
-app.get('/login', requireGuest, (req, res) => {
+// Serve login page (optional, auth is not required for dashboard)
+app.get('/login', (req, res) => {
   res.sendFile(path.join(publicDir, 'login.html'));
 });
 
-app.get('/signup', requireGuest, (req, res) => {
+app.get('/signup', (req, res) => {
   res.sendFile(path.join(publicDir, 'login.html'));
 });
 
-// Serve dashboard (protected)
-app.get('/dashboard', requireAuth, (req, res) => {
-  res.sendFile(path.join(publicDir, 'index.html'));
-});
-
-// Root redirects to login or dashboard
+// Root redirects to dashboard (bypass auth for now)
 app.get('/', (req, res) => {
-  if (req.session && req.session.userId) {
-    res.redirect('/dashboard');
-  } else {
-    res.redirect('/login');
-  }
+  res.redirect('/dashboard');
+});
+
+// Serve dashboard without auth requirement (for development)
+app.get('/dashboard', (req, res) => {
+  res.sendFile(path.join(publicDir, 'index.html'));
 });
 
 // Static files (after routes)
@@ -160,20 +156,15 @@ app.post('/api/esg/carbon-impact', (req, res) => {
   }
 });
 
-// Socket.IO authentication middleware
+// Socket.IO - allow connections without auth (auth optional for now)
 io.use((socket, next) => {
-  const session = socket.request.session;
-  if (session && session.userId) {
-    next();
-  } else {
-    socket.emit('authError', { message: 'Authentication required' });
-    next(new Error('Authentication required'));
-  }
+  // Allow all connections - authentication is optional
+  next();
 });
 
 io.on('connection', async (socket) => {
-  const session = socket.request.session;
-  console.log(`User connected: ${session.username || session.userId}`);
+  const session = socket.request.session || {};
+  console.log(`User connected: ${session.username || session.userId || 'guest'}`);
   
   const nodeCarbon = new NodeCarbon();
   let carbonAccumulator = 0;
