@@ -42,6 +42,12 @@ jobs:
         uses: actions/checkout@v4
       - name: Deploy to Vercel
         run: >-
+          mkdir -p .vercel &&
+          cat > .vercel/project.json << 'EOF'
+          {
+            "orgId": "${{ secrets.VERCEL_ORG_ID }}",
+            "projectId": "${{ secrets.VERCEL_PROJECT_ID }}"
+          }
+          EOF
           npx vercel@latest deploy --prod --yes
           --token ${{ secrets.VERCEL_TOKEN }}
-          --project ${{ secrets.VERCEL_PROJECT_ID }}
