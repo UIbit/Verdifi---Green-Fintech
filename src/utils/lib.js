@@ -1,8 +1,8 @@
 // Import necessary modules
 import os from 'os';
-import * as cpuData from '../data/cpu_power.json' assert { type: 'json' };
-import * as globalEnergyData from '../data/global_energy_mix.json' assert { type: 'json' };
-import * as carbonIntensityData from '../data/carbon_intesity_per_source.json' assert {type: 'json'};
+import * as cpuData from '../data/cpu_power.json' with { type: 'json' };
+import * as globalEnergyData from '../data/global_energy_mix.json' with { type: 'json' };
+import * as carbonIntensityData from '../data/carbon_intesity_per_source.json' with { type: 'json' };
 import https from 'https';
 
 // Function to make an asynchronous HTTP request to get geographic information based on the IP address
