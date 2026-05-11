@@ -1,7 +1,10 @@
 # Production GitHub Actions Workflow for Node.js
 # This workflow installs dependencies, runs tests, lints, and deploys on push to main.
 
+
 name: Production CI/CD
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
