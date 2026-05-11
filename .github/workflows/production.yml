@@ -49,5 +49,5 @@ jobs:
             "projectId": "${{ secrets.VERCEL_PROJECT_ID }}"
           }
           EOF
-          npx vercel@latest deploy --prod --yes
+          && npx vercel@latest deploy --prod --yes
           --token ${{ secrets.VERCEL_TOKEN }}
