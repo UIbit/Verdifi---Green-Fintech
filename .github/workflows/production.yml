@@ -43,11 +43,6 @@ jobs:
       - name: Deploy to Vercel
         run: >-
           mkdir -p .vercel &&
-          cat > .vercel/project.json << 'EOF'
-          {
-            "orgId": "${{ secrets.VERCEL_ORG_ID }}",
-            "projectId": "${{ secrets.VERCEL_PROJECT_ID }}"
-          }
-          EOF
-          && npx vercel@latest deploy --prod --yes
+          printf '{\n  "orgId": "%s",\n  "projectId": "%s"\n}\n' "${{ secrets.VERCEL_ORG_ID }}" "${{ secrets.VERCEL_PROJECT_ID }}" > .vercel/project.json &&
+          npx vercel@latest deploy --prod --yes
           --token ${{ secrets.VERCEL_TOKEN }}
