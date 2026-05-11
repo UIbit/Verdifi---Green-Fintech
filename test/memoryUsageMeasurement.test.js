@@ -1,4 +1,5 @@
 
+
 import chai from 'chai';
 import MemoryUsageMeasurement from '../src/memoryUsageMeasurement.js';
 
