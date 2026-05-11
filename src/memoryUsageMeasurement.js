@@ -1,4 +1,4 @@
--class MemoryUsageMeasurement {
+class MemoryUsageMeasurement {
     /**
      * Create a new MemoryUsageMeasurement object.
      */
@@ -18,7 +18,7 @@
     /**
      * Stop measuring memory usage and return the results.
      * @returns {object} An object containing the RSS delta, heap total delta, heap used delta, and total time.
-     */`  A 
+     */
     stop() {
       const endMemory = process.memoryUsage(this.startMemory); // Get the memory usage at the end of the measurement
       const endTime = Date.now(); // Get the end time of the measurement
